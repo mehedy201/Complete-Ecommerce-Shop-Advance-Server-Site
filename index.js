@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -16,11 +18,13 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@complet
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
-
+const laptopCategoryData = 'Laptop'
 async function run() {
     try{
         await client.connect();
         const productsCollection = client.db("Complete_Ecommerce_Shop_Database").collection("Products");
+        const subscriberCollection = client.db("Complete_Ecommerce_Shop_Database").collection("Subscriber");
+
 
 
         // Post Product from client site________________________________________________
@@ -64,7 +68,14 @@ async function run() {
             const cursor = productsCollection.find(query);
             const products = await cursor.toArray();
             res.send(products);
-          });
+        });
+        // Products Person Data from Server ______________________________________________
+        app.get('/products/category/:name', async(req, res) => {
+            const name = req.params.name
+            const query ={inputCategoryData: name};
+            const cursor = await productsCollection.find(query).toArray();
+            res.send(cursor);
+        });
 
 
         // Delete Product  _______________________________________________________________
@@ -75,6 +86,39 @@ async function run() {
             const result = await productsCollection.deleteOne(query);
             res.send(result);
           })
+
+
+        // Post Subscriber Email ________________________________________________________________________________________==
+        app.post('/subscriber', async(req, res) => {
+            const subscriber = req.body;
+            const result = await subscriberCollection.insertOne(subscriber);
+            res.send({success: true, result});
+          })
+
+
+
+
+        // Stripe Intregation_________________________________________________
+    
+        app.post("/create-payment-intent", async (req, res) => {
+            const {newPrice} = req.body;
+            const amount = newPrice * 100;
+          
+            // Create a PaymentIntent with the order amount and currency
+            const paymentIntent = await stripe.paymentIntents.create({
+              currency: "usd",
+              amount: amount,
+              "payment_method_types": [
+                  "card"
+              ]
+            });
+          
+            res.send({
+              clientSecret: paymentIntent.client_secret,
+            });
+          });
+          
+
 
         
 
