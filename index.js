@@ -24,6 +24,7 @@ async function run() {
         await client.connect();
         const productsCollection = client.db("Complete_Ecommerce_Shop_Database").collection("Products");
         const subscriberCollection = client.db("Complete_Ecommerce_Shop_Database").collection("Subscriber");
+        const userOrderdData = client.db("Complete_Ecommerce_Shop_Database").collection("userOrderdData");
 
 
 
@@ -93,7 +94,14 @@ async function run() {
             const subscriber = req.body;
             const result = await subscriberCollection.insertOne(subscriber);
             res.send({success: true, result});
-          })
+        })
+
+        // User Ordered Data Post ________________________________________________________________________________________==
+        app.post('/userOrderdData', async(req, res) => {
+            const userData = req.body;
+            const result = await userOrderdData.insertOne(userData);
+            res.send({success: true, result});
+        })
 
 
 
